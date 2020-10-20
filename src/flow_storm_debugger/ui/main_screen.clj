@@ -68,17 +68,24 @@
            :root {:fx/type :border-pane                  
                   :center {:fx/type :tab-pane
                            :tabs [{:fx/type :tab
-                                   :graphic {:fx/type :label
-                                             :text "Flow1"}
+                                   :graphic {:fx/type :label :text "Flow1"}
                                    :content {:fx/type :split-pane
-                                             :items [{:fx/type :split-pane
-                                                      :orientation :vertical
-                                                      :items [{:fx/type :pane
-                                                               :style {:-fx-background-color :red}
-                                                               :children []}
-                                                              {:fx/type :pane
-                                                               :style {:-fx-background-color :green}
-                                                               :children []}]}
+                                             :items [{:fx/type :tab-pane
+                                                      :tabs [{:fx/type :tab
+                                                              :graphic {:fx/type :label :text "Code"}
+                                                              :content {:fx/type :pane
+                                                                        :style {:-fx-background-color :red}
+                                                                        :children []}
+                                                              :id "code"
+                                                              :closable false}
+                                                             {:fx/type :tab
+                                                              :graphic {:fx/type :label :text "Layers"}
+                                                              :content {:fx/type :pane
+                                                                        :style {:-fx-background-color :pink}
+                                                                        :children []}
+                                                              :id "layers"
+                                                              :closable false}]}
+                                                      
                                                      {:fx/type :split-pane
                                                       :orientation :vertical
                                                       :items [{:fx/type :pane

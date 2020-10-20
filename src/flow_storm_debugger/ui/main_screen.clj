@@ -66,23 +66,51 @@
    :height 1000
    :scene {:fx/type :scene
            :root {:fx/type :border-pane                  
-                  :center {:fx/type :split-pane
-                           :items [{:fx/type :split-pane
-                                    :orientation :vertical
-                                    :items [{:fx/type :pane
-                                             :style {:-fx-background-color :red}
-                                             :children []}
-                                            {:fx/type :pane
-                                             :style {:-fx-background-color :green}
-                                             :children []}]}
-                                   {:fx/type :split-pane
-                                    :orientation :vertical
-                                    :items [{:fx/type :pane
-                                             :style {:-fx-background-color :blue}
-                                             :children []}
-                                            {:fx/type :pane
-                                             :style {:-fx-background-color :yellow}
-                                             :children []}]}]}
+                  :center {:fx/type :tab-pane
+                           :tabs [{:fx/type :tab
+                                   :graphic {:fx/type :label
+                                             :text "Flow1"}
+                                   :content {:fx/type :split-pane
+                                             :items [{:fx/type :split-pane
+                                                      :orientation :vertical
+                                                      :items [{:fx/type :pane
+                                                               :style {:-fx-background-color :red}
+                                                               :children []}
+                                                              {:fx/type :pane
+                                                               :style {:-fx-background-color :green}
+                                                               :children []}]}
+                                                     {:fx/type :split-pane
+                                                      :orientation :vertical
+                                                      :items [{:fx/type :pane
+                                                               :style {:-fx-background-color :blue}
+                                                               :children []}
+                                                              {:fx/type :pane
+                                                               :style {:-fx-background-color :yellow}
+                                                               :children []}]}]}
+                                   :id "tab1"
+                                   :closable true}
+                                  {:fx/type :tab
+                                   :graphic {:fx/type :label
+                                             :text "Flow2"}
+                                   :content {:fx/type :split-pane
+                                             :items [{:fx/type :split-pane
+                                                      :orientation :vertical
+                                                      :items [{:fx/type :pane
+                                                               :style {:-fx-background-color :green}
+                                                               :children []}
+                                                              {:fx/type :pane
+                                                               :style {:-fx-background-color :green}
+                                                               :children []}]}
+                                                     {:fx/type :split-pane
+                                                      :orientation :vertical
+                                                      :items [{:fx/type :pane
+                                                               :style {:-fx-background-color :green}
+                                                               :children []}
+                                                              {:fx/type :pane
+                                                               :style {:-fx-background-color :green}
+                                                               :children []}]}]}
+                                   :id "tab2"
+                                   :closable true}]}
                   #_{:fx/type :grid-pane
                            :column-constraints [{:fx/type :column-constraints :max-width 100}]
                            :row-constraints [{:fx/type :row-constraints :max-height 100}]

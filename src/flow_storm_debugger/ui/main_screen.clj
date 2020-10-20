@@ -46,7 +46,7 @@
              (fx.mutator/setter #(.loadContent (.getEngine ^WebView %1) %2))
              fx.lifecycle/scalar)}))
 
-(defn code-browser []
+(defn code-browser [{:keys []}]
   {:fx/type ext-with-html
    :props {:html (str "<pre>"
                       (highlighter/highlight-expr "(->> (range 10)\n     (map inc)\n     (filter odd?) \n     (reduce +))" [3] "<b>" "</b>")
@@ -82,9 +82,7 @@
                                                       :items [{:fx/type :tab-pane
                                                                :tabs [{:fx/type :tab
                                                                        :graphic {:fx/type :label :text "Code"}
-                                                                       :content {:fx/type :pane
-                                                                                 :style {:-fx-background-color :red}
-                                                                                 :children []}
+                                                                       :content {:fx/type code-browser}
                                                                        :id "code"
                                                                        :closable false}
                                                                       {:fx/type :tab

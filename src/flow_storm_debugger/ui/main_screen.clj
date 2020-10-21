@@ -7,7 +7,7 @@
             [flow-storm-debugger.highlighter :as highlighter])
    (:import [javafx.scene.web WebView]))
 
-(def *state
+(defonce *state
   (atom (fx/create-context {:counter 0
                             :tasks [{:name "test"}
                                     {:name "juan"}
@@ -60,10 +60,55 @@
    :children []})
 
 (defn controls-pane [{:keys []}]
+  {:fx/type :border-pane
+   ;;:pref-height 100
+   :style {:-fx-background-color :pink
+           :-fx-padding 10}
+   :left {:fx/type :h-box
+          :children [{:fx/type :button :text "Reset"}
+                     {:fx/type :button :text "<"}
+                     {:fx/type :button :text ">"}]}
+   :center {:fx/type :label :text "10/534"}
+   :right {:fx/type :h-box
+           :children [{:fx/type :button :text "Load"}
+                      {:fx/type :button :text "Save"}]}})
+
+(defn layers-pane [{:keys []}]
   {:fx/type :pane
-   :pref-height 100
-   :style {:-fx-background-color :purple}
+   :style {:-fx-background-color :pink}
    :children []})
+
+(defn flow-tabs [{:keys []}]
+  {:fx/type :tab-pane
+   :tabs [{:fx/type :tab
+           :graphic {:fx/type :label :text "Flow1"}
+           :content {:fx/type :border-pane
+                     :style {:-fx-padding 10}
+                     :top {:fx/type controls-pane}
+                     :center {:fx/type :split-pane
+                              :items [{:fx/type :tab-pane
+                                       :tabs [{:fx/type :tab
+                                               :graphic {:fx/type :label :text "Code"}
+                                               :content {:fx/type code-browser}
+                                               :id "code"
+                                               :closable false}
+                                              {:fx/type :tab
+                                               :graphic {:fx/type :label :text "Layers"}
+                                               :content {:fx/type layers-pane}
+                                               :id "layers"
+                                               :closable false}]}
+                                      
+                                      {:fx/type :split-pane
+                                       :orientation :vertical
+                                       :items [{:fx/type :pane
+                                                :style {:-fx-background-color :blue}
+                                                :children []}
+                                               {:fx/type :pane
+                                                :style {:-fx-background-color :yellow}
+                                                :children []}]}]}}
+           :id "tab1"
+           :closable true}
+          ]})
 
 (defn main-screen [{:keys [fx/context]}]
   {:fx/type :stage
@@ -72,72 +117,10 @@
    :height 1000
    :scene {:fx/type :scene
            :root {:fx/type :border-pane                  
-                  :center {:fx/type :tab-pane
-                           :tabs [{:fx/type :tab
-                                   :graphic {:fx/type :label :text "Flow1"}
-                                   :content {:fx/type :border-pane
-                                             :style {:-fx-padding 10}
-                                             :top {:fx/type controls-pane}
-                                             :center {:fx/type :split-pane
-                                                      :items [{:fx/type :tab-pane
-                                                               :tabs [{:fx/type :tab
-                                                                       :graphic {:fx/type :label :text "Code"}
-                                                                       :content {:fx/type code-browser}
-                                                                       :id "code"
-                                                                       :closable false}
-                                                                      {:fx/type :tab
-                                                                       :graphic {:fx/type :label :text "Layers"}
-                                                                       :content {:fx/type :pane
-                                                                                 :style {:-fx-background-color :pink}
-                                                                                 :children []}
-                                                                       :id "layers"
-                                                                       :closable false}]}
-                                                              
-                                                              {:fx/type :split-pane
-                                                               :orientation :vertical
-                                                               :items [{:fx/type :pane
-                                                                        :style {:-fx-background-color :blue}
-                                                                        :children []}
-                                                                       {:fx/type :pane
-                                                                        :style {:-fx-background-color :yellow}
-                                                                        :children []}]}]}}
-                                   :id "tab1"
-                                   :closable true}
-                                  ]}
-                  #_{:fx/type :grid-pane
-                           :column-constraints [{:fx/type :column-constraints :max-width 100}]
-                           :row-constraints [{:fx/type :row-constraints :max-height 100}]
-                           :children [{:fx/type :pane
-                                       :grid-pane/column 0
-                                       :grid-pane/row 0
-                                       :grid-pane/hgrow :always
-                                       :grid-pane/vgrow :always                                       
-                                       :style {:-fx-background-color :red}
-                                       :children []}
-                                      {:fx/type :pane
-                                       :grid-pane/column 1
-                                       :grid-pane/row 0
-                                       :grid-pane/hgrow :always
-                                       :grid-pane/vgrow :always
-                                       :style {:-fx-background-color :green}
-                                       :children []}
-                                      {:fx/type :pane
-                                       :grid-pane/column 1
-                                       :grid-pane/row 1
-                                       :grid-pane/hgrow :always
-                                       :grid-pane/vgrow :always
-                                       :style {:-fx-background-color :blue}
-                                       :children []}
-                                      {:fx/type :pane
-                                       :grid-pane/column 0
-                                       :grid-pane/row 1
-                                       :grid-pane/hgrow :always
-                                       :grid-pane/vgrow :always
-                                       :style {:-fx-background-color :yellow}
-                                       :children []}]}
+                  :center {:fx/type flow-tabs}
                   :bottom {:fx/type bottom-bar}}}})
 
-(def renderer
+(defonce renderer
   (fx/create-renderer
     :middleware (comp
                   ;; Pass context to every lifecycle as part of option map
@@ -155,10 +138,42 @@
                                            :dispatch fx/dispatch-effect
                                            :http custom-fx}))}))
 
-
+(renderer)
 (comment
   (fx/mount-renderer *state renderer)
 (renderer)
   (swap! *state fx/swap-context update :counter inc)
   (swap! *state fx/swap-context update :tasks conj {:name "AAA"})
+
+  #_{:fx/type :grid-pane
+     :column-constraints [{:fx/type :column-constraints :max-width 100}]
+     :row-constraints [{:fx/type :row-constraints :max-height 100}]
+     :children [{:fx/type :pane
+                 :grid-pane/column 0
+                 :grid-pane/row 0
+                 :grid-pane/hgrow :always
+                 :grid-pane/vgrow :always                                       
+                 :style {:-fx-background-color :red}
+                 :children []}
+                {:fx/type :pane
+                 :grid-pane/column 1
+                 :grid-pane/row 0
+                 :grid-pane/hgrow :always
+                 :grid-pane/vgrow :always
+                 :style {:-fx-background-color :green}
+                 :children []}
+                {:fx/type :pane
+                 :grid-pane/column 1
+                 :grid-pane/row 1
+                 :grid-pane/hgrow :always
+                 :grid-pane/vgrow :always
+                 :style {:-fx-background-color :blue}
+                 :children []}
+                {:fx/type :pane
+                 :grid-pane/column 0
+                 :grid-pane/row 1
+                 :grid-pane/hgrow :always
+                 :grid-pane/vgrow :always
+                 :style {:-fx-background-color :yellow}
+                 :children []}]}
   )

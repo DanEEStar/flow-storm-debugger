@@ -11,7 +11,7 @@
                                                                      :form-id form-id
                                                                      :form-flow-id form-flow-id
                                                                      :coor []
-                                                                     :timestamp (.getTime (js/Date.))}
+                                                                     :timestamp (utils/get-timestamp)}
                                                               fn-name (assoc :args-vec args-vec
                                                                              :fn-name fn-name))]
                                               (if-not traces
@@ -30,7 +30,7 @@
                                                        :coor coor
                                                        :symbol symbol
                                                        :value (utils/pprint-form-for-html value)
-                                                       :timestamp (.getTime (js/Date.))}))))
+                                                       :timestamp (utils/get-timestamp)}))))
 
 (defn add-trace [db [{:keys [flow-id form-id form-flow-id coor result outer-form?] :as trace}]]
   (let [flow-id (or flow-id
@@ -41,4 +41,4 @@
                                                   :outer-form? outer-form?
                                                   :coor coor
                                                   :result (utils/pprint-form-for-html result)
-                                                  :timestamp (.getTime (js/Date.))}))))
+                                                  :timestamp (utils/get-timestamp)}))))

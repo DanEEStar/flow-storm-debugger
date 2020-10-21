@@ -13,6 +13,7 @@
             [flow-storm-debugger.ui.events :as ui.events]
             [flow-storm-debugger.ui.events.traces :as events.traces]
             [flow-storm-debugger.ui.db :as ui.db]
+            [flow-storm-debugger.ui.main-screen :as ui.main-screen]
             [cljfx.api :as fx]))
 
 (def server (atom nil))
@@ -40,7 +41,7 @@
    (POST "/save-flow" req (do (save-flow req) {:status 200}) )
    (resources "/")))
 
-(defn handle-ws-message [send-fn {:keys [event client-id user-id] :as msg}]
+#_(defn handle-ws-message [send-fn {:keys [event client-id user-id] :as msg}]
   (if (= client-id "browser")
     ;; message comming from the browser
     nil #_(println "browser -> tracer" event)
@@ -55,37 +56,38 @@
         (when (#{:flow-storm/init-trace :flow-storm/add-trace :flow-storm/add-bind-trace} evk)
           (send-fn "browser" event))))))
 
-(defn dispatch-local-event [_ event]
-  (let [[_ evt] event]
-    (let [[e-key e-data-map] evt]
-      (case e-key
-        :flow-storm/add-trace                (swap! ui.db/*state fx/swap-context events.traces/add-trace e-data-map) 
-        :flow-storm/init-trace               (swap! ui.db/*state fx/swap-context events.traces/init-trace e-data-map)        
-        :flow-storm/add-bind-trace           (swap! ui.db/*state fx/swap-context events.traces/add-bind-trace e-data-map) 
-        :flow-storm/connected-clients-update (swap! ui.db/*state fx/swap-context assoc :connected-clients (:count e-data-map))
-        (println "Donw know how to handle" evt))
-      (println "Got event " evt))))
+(defn dispatch-local-event [event]
+  (let [[e-key e-data-map] event]
+    (case e-key
+      :flow-storm/add-trace                (swap! ui.db/*state fx/swap-context events.traces/add-trace e-data-map) 
+      :flow-storm/init-trace               (swap! ui.db/*state fx/swap-context events.traces/init-trace e-data-map)        
+      :flow-storm/add-bind-trace           (swap! ui.db/*state fx/swap-context events.traces/add-bind-trace e-data-map) 
+      :flow-storm/connected-clients-update (swap! ui.db/*state fx/swap-context assoc :connected-clients (:count e-data-map))
+      (println "Donw know how to handle" event))
+    (println "Got event " event)))
 
 (defn -main [& args]
-  (let [native? true
-        {:keys [ws-routes ws-send-fn ch-recv connected-uids-atom]} (build-websocket)
+  (let [{:keys [ws-routes ws-send-fn ch-recv connected-uids-atom]} (build-websocket)
         port 7722
-        dispatch-event (if native? dispatch-local-event ws-send-fn)]
+        dispatch-event dispatch-local-event]
 
     (go-loop []
       (try
-        (handle-ws-message dispatch-event (async/<! ch-recv))
+        (let [event (:event (async/<! ch-recv))]
+          (println "DISPATCHING " event)
+         (dispatch-event event))
         (catch Exception e
           (println "ERROR handling ws message")))
       (recur))
 
+    (fx/mount-renderer ui.db/*state ui.main-screen/renderer)
     (reset! server (http-server/run-server (-> (compojure/routes ws-routes (build-routes {:port port}))
                                               (wrap-cors :access-control-allow-origin [#"http://localhost:9500"]
                                                          :access-control-allow-methods [:get :put :post :delete])
                                               wrap-keyword-params
                                               wrap-params)
                                            {:port port}))
-    (println "HTTP server running on 7722")))
+    #_(println "HTTP server running on 7722")))
 
 (comment
   (def some-events [[:flow-storm/connected-clients-update {:count 1}]
@@ -95,7 +97,14 @@
                   [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [], :result "(1 2 3)"}]
                     [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [], :result "(1 2 3)", :outer-form? true}]])
 
-  (doseq [e some-events]
+  (def some-events-2 [[:flow-storm/connected-clients-update {:count 1}]
+                      [:flow-storm/init-trace {:flow-id 333, :form-id 444, :form-flow-id 555, :form "(->> (range 4) (map inc))"}]
+                      [:flow-storm/add-trace {:flow-id 333, :form-id 444, :form-flow-id 555, :coor [2 1], :result "#function[clojure.core/inc]"}]
+                      [:flow-storm/add-trace {:flow-id 333, :form-id 444, :form-flow-id 555, :coor [1], :result "(0 1 2)"}]
+                      [:flow-storm/add-trace {:flow-id 333, :form-id 444, :form-flow-id 555, :coor [], :result "(1 2 3)"}]
+                      [:flow-storm/add-trace {:flow-id 333, :form-id 444, :form-flow-id 555, :coor [], :result "(1 2 3)", :outer-form? true}]])
+
+  (doseq [e some-events-2]
     (dispatch-local-event nil [nil e]))
   
   (require '[flow-storm.api :as fsa])

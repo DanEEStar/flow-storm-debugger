@@ -48,6 +48,23 @@
                   (highlight-expr form-str (:coor current-trace) "<b class=\"hl\">" "</b>")
                   form-str)])))))
 
+(defn flow-name [forms traces]
+  (let [form-id (-> traces
+                    first
+                    :form-id)
+        form (get forms form-id)
+        str-len (count form)]
+    (when form
+     (cond-> form
+       true (subs 0 (min 20 str-len))
+       (> str-len 20) (str "...")))))
+
+(defn flows-tabs [context]
+  (let [flows (fx/sub-ctx context flows)]
+    (->> flows
+         (map (fn [[flow-id {:keys [forms traces]}]]
+                [flow-id (flow-name forms traces)])))))
+
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])
   (selected-flow-forms-highlighted @ui.db/*state)

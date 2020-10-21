@@ -1,7 +1,7 @@
 (ns flow-storm-debugger.ui.events.traces
   (:require [flow-storm-debugger.ui.utils :as utils]))
 
-(defn init-trace [db [{:keys [flow-id form-id form-flow-id args-vec fn-name form] :as trace}]]
+(defn init-trace [db {:keys [flow-id form-id form-flow-id args-vec fn-name form] :as trace}]
   (-> db
       (update :selected-flow-id #(or % flow-id))
       (assoc-in [:flows flow-id :forms form-id] (utils/pprint-form-for-html form))
@@ -21,7 +21,7 @@
       (update-in [:flows flow-id :bind-traces] #(or % []))
       (assoc-in [:flows flow-id :local-panel-symbol] nil)))
 
-(defn add-bind-trace [db [{:keys [flow-id form-id form-flow-id coor symbol value] :as trace}]]
+(defn add-bind-trace [db {:keys [flow-id form-id form-flow-id coor symbol value] :as trace}]
   (let [flow-id (or flow-id
                     (get-in db [:form-flow-id->flow-id form-flow-id]))]
     (-> db
@@ -32,7 +32,7 @@
                                                        :value (utils/pprint-form-for-html value)
                                                        :timestamp (utils/get-timestamp)}))))
 
-(defn add-trace [db [{:keys [flow-id form-id form-flow-id coor result outer-form?] :as trace}]]
+(defn add-trace [db {:keys [flow-id form-id form-flow-id coor result outer-form?] :as trace}]
   (let [flow-id (or flow-id
                     (get-in db [:form-flow-id->flow-id form-flow-id]))]
     (-> db

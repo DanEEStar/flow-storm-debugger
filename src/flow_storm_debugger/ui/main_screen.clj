@@ -1,43 +1,19 @@
 (ns flow-storm-debugger.ui.main-screen
   (:require [cljfx.api :as fx]
-            [clojure.core.cache :as cache]
             [cljfx.prop :as fx.prop]
             [cljfx.mutator :as fx.mutator]
             [cljfx.lifecycle :as fx.lifecycle]
-            [flow-storm-debugger.highlighter :as highlighter])
+            [flow-storm-debugger.highlighter :as highlighter]
+            [flow-storm-debugger.ui.db :as ui.db]
+            [flow-storm-debugger.ui.subs :as ui.subs]
+            [flow-storm-debugger.ui.events :as ui.events])
    (:import [javafx.scene.web WebView]))
 
-(defonce *state
-  (atom (fx/create-context {:counter 0
-                            :tasks [{:name "test"}
-                                    {:name "juan"}
-                                    {:name "bla"}
-                                    {:name "xxx"}]}
-                           cache/lru-cache-factory)))
-
-(defn counter-sub [context]
-  (println "Firing counter-sub")
-  (fx/sub-val context :counter))
-
-(defn list-sub [context]
-  (println "Firing list-sub")
-  (fx/sub-val context :tasks))
-
-(defn sorter-list-sub [context]
-  (println "Firing sorter-list-sub")
-  (sort-by :name (fx/sub-ctx context list-sub)))
-
-(defn all-sub [context]
-  (println "Firing all-sub")
-  (str 
-   (fx/sub-ctx context counter-sub)
-   (fx/sub-ctx context sorter-list-sub)))
-
-(defn event-handler [ev]
+#_(defn event-handler [ev]
   (println "GOT ev" ev)
   {:context (fx/swap-context (:fx/context ev) update :counter inc)})
 
-(defn custom-fx [v dispatch!]
+#_(defn custom-fx [v dispatch!]
   (println "FX called with " v))
 
 (def ext-with-html
@@ -46,39 +22,51 @@
              (fx.mutator/setter #(.loadContent (.getEngine ^WebView %1) %2))
              fx.lifecycle/scalar)}))
 
-(defn code-browser [{:keys []}]
-  {:fx/type ext-with-html
-   :props {:html (str "<pre>"
-                      (highlighter/highlight-expr "(->> (range 10)\n     (map inc)\n     (filter odd?) \n     (reduce +))" [3] "<b>" "</b>")
-                      "</pre>")}
-   :desc {:fx/type :web-view}})
+(defn code-browser [{:keys [fx/context]}]
+  (let [hl-forms (fx/sub-ctx context ui.subs/selected-flow-forms-highlighted)
+        forms-html (->> hl-forms
+                        (map (fn [[_ form-str]]
+                               (str "<pre class=\"form\">" form-str "</pre>")))
+                        (reduce str))]
+   {:fx/type ext-with-html
+    :props {:html (str "<div class=\"forms\">"
+                       forms-html
+                       "</div>")}
+    :desc {:fx/type :web-view}}))
 
-(defn bottom-bar [{:keys []}]
+(defn bottom-bar [{:keys [fx/context]}]
   {:fx/type :pane
    :pref-height 50
    :style {:-fx-background-color :orange}
    :children []})
 
-(defn controls-pane [{:keys []}]
-  {:fx/type :border-pane
-   ;;:pref-height 100
-   :style {:-fx-background-color :pink
-           :-fx-padding 10}
-   :left {:fx/type :h-box
-          :children [{:fx/type :button :text "Reset"}
-                     {:fx/type :button :text "<"}
-                     {:fx/type :button :text ">"}]}
-   :center {:fx/type :label :text "10/534"}
-   :right {:fx/type :h-box
-           :children [{:fx/type :button :text "Load"}
-                      {:fx/type :button :text "Save"}]}})
+(defn controls-pane [{:keys [fx/context]}]
+  (let [{:keys [traces trace-idx]} (fx/sub-ctx context ui.subs/selected-flow)]
+   {:fx/type :border-pane
+    ;;:pref-height 100
+    :style {:-fx-background-color :pink
+            :-fx-padding 10}
+    :left {:fx/type :h-box
+           :children [{:fx/type :button
+                       :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx :trace-idx 0}
+                       :text "Reset"}
+                      {:fx/type :button
+                       :on-mouse-clicked {:event/type ::ui.events/selected-flow-prev}
+                       :text "<"}
+                      {:fx/type :button
+                       :on-mouse-clicked {:event/type ::ui.events/selected-flow-next}
+                       :text ">"}]}
+    :center {:fx/type :label :text (str trace-idx "/" (count traces))}
+    :right {:fx/type :h-box
+            :children [{:fx/type :button :text "Load"}
+                       {:fx/type :button :text "Save"}]}}))
 
-(defn layers-pane [{:keys []}]
+(defn layers-pane [{:keys [fx/context]}]
   {:fx/type :pane
    :style {:-fx-background-color :pink}
    :children []})
 
-(defn flow-tabs [{:keys []}]
+(defn flow-tabs [{:keys [fx/context]}]
   {:fx/type :tab-pane
    :tabs [{:fx/type :tab
            :graphic {:fx/type :label :text "Flow1"}
@@ -130,18 +118,20 @@
                                         ;; For functions in `:fx/type` values, pass
                                         ;; context from option map to these functions
                                         (fx/fn->lifecycle-with-context %))
-           :fx.opt/map-event-handler (-> event-handler
+           :fx.opt/map-event-handler (-> ui.events/dispatch-event
                                          (fx/wrap-co-effects
-                                          {:fx/context (fx/make-deref-co-effect *state)})
+                                          {:fx/context (fx/make-deref-co-effect ui.db/*state)})
                                          (fx/wrap-effects
-                                          {:context (fx/make-reset-effect *state)
+                                          {:context (fx/make-reset-effect ui.db/*state)
                                            :dispatch fx/dispatch-effect
-                                           :http custom-fx}))}))
+                                           ;;:http custom-fx
+                                           }))}))
 
 (renderer)
 (comment
-  (fx/mount-renderer *state renderer)
-(renderer)
+  (fx/mount-renderer ui.db/*state renderer)
+  
+
   (swap! *state fx/swap-context update :counter inc)
   (swap! *state fx/swap-context update :tasks conj {:name "AAA"})
 

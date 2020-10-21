@@ -9,7 +9,11 @@
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.util.response :refer [resource-response]]
             [clojure.core.async :refer [go-loop] :as async]
-            [ring.util.request :refer [body-string]]))
+            [ring.util.request :refer [body-string]]
+            [flow-storm-debugger.ui.events :as ui.events]
+            [flow-storm-debugger.ui.events.traces :as events.traces]
+            [flow-storm-debugger.ui.db :as ui.db]
+            [cljfx.api :as fx]))
 
 (def server (atom nil))
 
@@ -51,13 +55,26 @@
         (when (#{:flow-storm/init-trace :flow-storm/add-trace :flow-storm/add-bind-trace} evk)
           (send-fn "browser" event))))))
 
+(defn dispatch-local-event [_ event]
+  (let [[_ evt] event]
+    (let [[e-key e-data-map] evt]
+      (case e-key
+        :flow-storm/add-trace                (swap! ui.db/*state fx/swap-context events.traces/add-trace e-data-map) 
+        :flow-storm/init-trace               (swap! ui.db/*state fx/swap-context events.traces/init-trace e-data-map)        
+        :flow-storm/add-bind-trace           (swap! ui.db/*state fx/swap-context events.traces/add-bind-trace e-data-map) 
+        :flow-storm/connected-clients-update (swap! ui.db/*state fx/swap-context assoc :connected-clients (:count e-data-map))
+        (println "Donw know how to handle" evt))
+      (println "Got event " evt))))
+
 (defn -main [& args]
-  (let [{:keys [ws-routes ws-send-fn ch-recv connected-uids-atom]} (build-websocket)
-        port 7722]
+  (let [native? true
+        {:keys [ws-routes ws-send-fn ch-recv connected-uids-atom]} (build-websocket)
+        port 7722
+        dispatch-event (if native? dispatch-local-event ws-send-fn)]
 
     (go-loop []
       (try
-        (handle-ws-message ws-send-fn (async/<! ch-recv))
+        (handle-ws-message dispatch-event (async/<! ch-recv))
         (catch Exception e
           (println "ERROR handling ws message")))
       (recur))
@@ -71,8 +88,21 @@
     (println "HTTP server running on 7722")))
 
 (comment
+  (def some-events [[:flow-storm/connected-clients-update {:count 1}]
+                  [:flow-storm/init-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :form "(->> (range 3) (map inc))"}]
+                  [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [2 1], :result "#function[clojure.core/inc]"}]
+                  [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [1], :result "(0 1 2)"}]
+                  [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [], :result "(1 2 3)"}]
+                    [:flow-storm/add-trace {:flow-id 4094, :form-id 1195953040, :form-flow-id 94111, :coor [], :result "(1 2 3)", :outer-form? true}]])
+
+  (doseq [e some-events]
+    (dispatch-local-event nil [nil e]))
+  
   (require '[flow-storm.api :as fsa])
-  (-main)
+  (def m-thread (Thread. (fn [] (-main))))
+  (.start m-thread)
+  (.stop m-thread)
   (fsa/connect)
+ 
 
   )

@@ -2,22 +2,22 @@
   #?(:cljs (:require [ajax.core :as ajax])))
 
 
-(defn selected-flow-prev [{:keys [selected-flow-id] :as db} _]
+(defn selected-flow-prev [{:keys [selected-flow-id] :as db}]
   (update-in db [:flows selected-flow-id :trace-idx] dec))
 
-(defn selected-flow-next [{:keys [selected-flow-id] :as db} _]
+(defn selected-flow-next [{:keys [selected-flow-id] :as db}]
   (update-in db [:flows selected-flow-id :trace-idx] inc))
 
-(defn select-flow [{:keys [selected-flow-id] :as db} [flow-id]]
+(defn select-flow [{:keys [selected-flow-id] :as db} {:keys [flow-id]}]
   (-> db
       (assoc :selected-flow-id flow-id)))
 
-(defn remove-flow [{:keys [selected-flow-id flows] :as db} [flow-id]]
+(defn remove-flow [{:keys [selected-flow-id flows] :as db} {:keys [flow-id]}]
   (let [db' (update db :flows dissoc flow-id)]
     (cond-> db'
       (= selected-flow-id flow-id) (assoc :selected-flow-id (-> db' :flows keys first)))))
 
-(defn set-current-flow-trace-idx [{:keys [selected-flow-id] :as db} [trace-idx]]
+(defn set-current-flow-trace-idx [{:keys [selected-flow-id] :as db} {:keys [trace-idx]}]
   (assoc-in db [:flows selected-flow-id :trace-idx] trace-idx))
 
 #?(:cljs

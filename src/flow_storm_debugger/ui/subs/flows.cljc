@@ -38,13 +38,14 @@
   trace-idx)
 
 (defn selected-flow-similar-traces [[traces trace-idx] _]
-   (let [traces (mapv (fn [idx t] (assoc t :trace-idx idx)) (range) traces)
+  (let [traces (mapv (fn [idx t] (assoc t :trace-idx idx)) (range) traces)
          {:keys [form-id coor]} (get traces trace-idx)
          current-coor (get-in traces [trace-idx :coor])
          similar-traces (->> traces
                              (filter (fn similar [t]
                                        (and (= (:form-id t) form-id)
-                                            (= (:coor t)    coor)))))]
+                                            (= (:coor t)    coor)
+                                            (:result t)))))]
      similar-traces))
 
 (defn selected-flow-current-trace [{:keys [traces trace-idx]} _]

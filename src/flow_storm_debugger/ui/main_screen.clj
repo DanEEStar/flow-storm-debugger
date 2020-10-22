@@ -81,9 +81,19 @@
                        {:fx/type :button :text "Save"}]}}))
 
 (defn layers-pane [{:keys [fx/context]}]
-  {:fx/type :pane
-   :style {:-fx-background-color :pink}
-   :children []})
+  (let [layers (fx/sub-ctx context ui.subs/selected-flow-similar-traces)
+        selected-item (some #(when (:selected? %) %) layers)]
+    {:fx/type fx.ext.list-view/with-selection-props
+     :props {:selection-mode :single
+             :on-selected-item-changed (fn [{:keys [trace-idx]}]
+                                         (event-handler {:event/type ::ui.events/set-current-flow-trace-idx
+                                                         :trace-idx trace-idx}))
+             :selected-item selected-item}
+     :desc {:fx/type :list-view
+            :cell-factory {:fx/cell-type :list-cell                    
+                           :describe (fn [{:keys [result selected?]}]                                
+                                       {:text result})}
+            :items layers}}))
 
 (defn calls-tree-pane [{:keys [fx/context]}]
   {:fx/type :pane
@@ -152,7 +162,6 @@
                                      :flow-id flow-id}
                          :on-selection-changed (fn [ev]
                                                  (when (.isSelected (.getTarget ev))
-                                                   (println "Clicked flow " flow-id )
                                                    (event-handler {:event/type ::ui.events/select-flow
                                                                    :flow-id flow-id})))
                          :graphic {:fx/type :label :text tab-name}

@@ -99,6 +99,18 @@
          (sort-by first)
          (into [["result" result true]]))))
 
+(defn selected-flow-similar-traces [context]
+  (let [{:keys [traces trace-idx]} (fx/sub-ctx context selected-flow)
+        traces (mapv (fn [idx t] (assoc t :trace-idx idx :selected? (= idx trace-idx))) (range) traces)
+        {:keys [form-id coor]} (get traces trace-idx)
+        current-coor (get-in traces [trace-idx :coor])
+        similar-traces (->> traces
+                            (filter (fn similar [t]
+                                      (and (= (:form-id t) form-id)
+                                           (= (:coor t)    coor)
+                                           (:result t)))))]
+    similar-traces))
+
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])
   (selected-flow-forms-highlighted @ui.db/*state)

@@ -45,7 +45,7 @@
                            (assoc :flow-id selected-flow-id)
                            pr-str)))))
 
-(defn load-flow [db [flow]]
+(defn load-flow [db flow]
   (let [flow-id (:flow-id flow)]
     (-> db
         (assoc-in [:flows flow-id] flow)

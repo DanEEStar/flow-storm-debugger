@@ -7,7 +7,7 @@
             [flow-storm-debugger.ui.db :as ui.db]
             [flow-storm-debugger.ui.subs :as ui.subs]
             [flow-storm-debugger.ui.events :as ui.events])
-   (:import [javafx.scene.web WebView]))
+  (:import [javafx.scene.web WebView]))
 
 (def event-handler
   (-> ui.events/dispatch-event
@@ -50,6 +50,11 @@
    :style {:-fx-background-color :orange}
    :children []})
 
+(defn load-button [_]
+  {:fx/type :button
+   :text "Load"
+   :on-action {:event/type ::ui.events/load-flow}})
+
 (defn controls-pane [{:keys [fx/context]}]
   (let [{:keys [traces trace-idx]} (fx/sub-ctx context ui.subs/selected-flow)
         last-trace (dec (count traces))]
@@ -70,13 +75,18 @@
                        :disable (>= trace-idx last-trace)}]}
     :center {:fx/type :label :text (str trace-idx "/" last-trace)}
     :right {:fx/type :h-box
-            :children [{:fx/type :button :text "Load"}
+            :children [{:fx/type load-button}
                        {:fx/type :button :text "Save"}]}}))
 
 (defn layers-pane [{:keys [fx/context]}]
   {:fx/type :pane
    :style {:-fx-background-color :pink}
    :children []})
+
+(defn pprint-pane [{:keys [fx/context]}]
+  (let [result (fx/sub-ctx context ui.subs/selected-flow-result)]
+   {:fx/type :text-area
+    :text result}))
 
 (defn selected-flow [{:keys [fx/context]}]
   {:fx/type :border-pane
@@ -97,9 +107,7 @@
                     
                     {:fx/type :split-pane
                      :orientation :vertical
-                     :items [{:fx/type :pane
-                              :style {:-fx-background-color :blue}
-                              :children []}
+                     :items [{:fx/type pprint-pane}
                              {:fx/type :pane
                               :style {:-fx-background-color :yellow}
                               :children []}]}]}})
@@ -120,18 +128,20 @@
                          :graphic {:fx/type :label :text tab-name}
                          :content {:fx/type selected-flow} 
                          :id (str flow-id)
-                         :closable true}
-                        )))}))
+                         :closable true})))}))
 
 (defn main-screen [{:keys [fx/context]}]
-  {:fx/type :stage
-   :showing true
-   :width 1000
-   :height 1000
-   :scene {:fx/type :scene
-           :root {:fx/type :border-pane                  
-                  :center {:fx/type flow-tabs}
-                  :bottom {:fx/type bottom-bar}}}})
+  (let [flows (fx/sub-ctx context ui.subs/flows)]
+   {:fx/type :stage
+    :showing true
+    :width 1000
+    :height 1000
+    :scene {:fx/type :scene
+            :root {:fx/type :border-pane                  
+                   :center (if (empty? flows)
+                             {:fx/type load-button}
+                             {:fx/type flow-tabs})
+                   :bottom {:fx/type bottom-bar}}}}))
 
 (defonce renderer
   (fx/create-renderer

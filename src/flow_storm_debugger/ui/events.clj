@@ -1,7 +1,10 @@
 (ns flow-storm-debugger.ui.events
   (:require [flow-storm-debugger.ui.events.flows :as events.flows]
             [flow-storm-debugger.ui.events.traces :as events.traces]
-            [cljfx.api :as fx]))
+            [cljfx.api :as fx])
+  (:import [javafx.stage FileChooser]
+           [javafx.event ActionEvent]
+           [javafx.scene Node]))
 
 (defmulti dispatch-event :event/type)
 
@@ -22,6 +25,13 @@
 
 (defmethod dispatch-event ::set-current-flow-trace-idx [{:keys [fx/context trace-idx]}]
   {:context (fx/swap-context context events.flows/set-current-flow-trace-idx trace-idx)})
+
+(defmethod dispatch-event ::load-flow [{:keys [fx/context ^ActionEvent fx/event]}]
+  (let [window (.getWindow (.getScene ^Node (.getTarget event)))
+        chooser (doto (FileChooser.)
+                  (.setTitle "Open File"))]
+    (when-let [file (.showOpenDialog chooser window)]
+      {:context (fx/swap-context context events.flows/load-flow (read-string (slurp file)))})))
 
 ;; (defmethod dispatch-event ::save-selected-flow [{:keys [fx/context]}]
 ;;   ;;{:context (fx/swap-context context )}

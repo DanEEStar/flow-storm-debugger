@@ -65,6 +65,11 @@
          (map (fn [[flow-id {:keys [forms traces]}]]
                 [flow-id (flow-name forms traces)])))))
 
+(defn selected-flow-result [context]
+  (let [{:keys [traces trace-idx]} (selected-flow context)
+        {:keys [result]} (get traces trace-idx)]
+    result))
+
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])
   (selected-flow-forms-highlighted @ui.db/*state)

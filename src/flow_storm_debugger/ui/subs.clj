@@ -111,6 +111,54 @@
                                            (:result t)))))]
     similar-traces))
 
+(defn fn-call-trace? [trace]
+  (:args-vec trace))
+
+(defn ret-trace? [trace]
+  (and (:result trace)
+       (:outer-form? trace)))
+
+(defn build-tree-from-traces [traces]
+  (loop [[t & r] (rest traces)
+         tree (-> (first traces)
+                  (assoc :childs []))
+         path [:childs]]
+    (let [last-child-path (into path [(count (get-in tree path))])]
+      (cond
+        (nil? t) tree
+        (fn-call-trace? t) (recur r
+                                  (update-in tree last-child-path #(merge % (assoc t :childs [])))
+                                  (into last-child-path [:childs]))
+        (ret-trace? t) (let [ret-pointer (vec (butlast path))]
+                         (recur r
+                                (if (empty? ret-pointer)
+                                  (merge tree t)
+                                  (update-in tree ret-pointer merge t ))
+                                (vec (butlast (butlast path)))))))))
+
+(defn selected-flow-traces [context]
+  (:traces (fx/sub-ctx context selected-flow)))
+
+(defn selected-flow-trace-idx [context]
+  (:trace-idx (fx/sub-ctx context selected-flow)))
+
+(defn selected-flow-forms [context]
+  (:forms (fx/sub-ctx context selected-flow)))
+
+(defn fn-call-traces [context]
+  (let [traces  (fx/sub-ctx context selected-flow-traces)
+        forms (fx/sub-ctx context selected-flow-forms)
+        call-traces (->> traces
+                         (map-indexed (fn [idx t]
+                                        (if (fn-call-trace? t)
+                                          (assoc t :call-trace-idx idx)
+                                          (assoc t :ret-trace-idx idx))))
+                         (filter (fn [t] (or (fn-call-trace? t)
+                                             (ret-trace? t)))))]
+    (when (some #(:fn-name %) call-traces)
+      (build-tree-from-traces call-traces))))
+
+
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])
   (selected-flow-forms-highlighted @ui.db/*state)

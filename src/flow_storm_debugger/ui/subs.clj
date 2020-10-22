@@ -65,10 +65,39 @@
          (map (fn [[flow-id {:keys [forms traces]}]]
                 [flow-id (flow-name forms traces)])))))
 
-(defn selected-flow-result [context]
-  (let [{:keys [traces trace-idx]} (selected-flow context)
-        {:keys [result]} (get traces trace-idx)]
-    result))
+(defn selected-flow-pprint-panel-content [context]
+  (:pprint-panel-content (fx/sub-ctx context selected-flow)))
+
+(defn coor-in-scope? [scope-coor current-coor]
+  (if (empty? scope-coor)
+    true
+    (every? true? (map = scope-coor current-coor))))
+
+(defn trace-locals [{:keys [coor form-id timestamp]} bind-traces]
+  (let [in-scope? (fn [bt]
+                    (and (= form-id (:form-id bt))
+                         (coor-in-scope? (:coor bt) coor)
+                         (<= (:timestamp bt) timestamp)))]
+    (when-not (empty? coor)
+      (->> bind-traces          ;;(filter in-scope? bind-traces)
+           (reduce (fn [r {:keys [symbol value] :as bt}]
+                     (if (in-scope? bt)
+                       (assoc r symbol value)
+                       r))
+                   {})))))
+
+(defn selected-flow-bind-traces [context]
+  (let [sel-flow (fx/sub-ctx context selected-flow)]
+    (:bind-traces sel-flow)))
+
+(defn selected-flow-current-locals [context]
+  (let [{:keys [result] :as curr-trace} (fx/sub-ctx context selected-flow-current-trace)
+        bind-traces (fx/sub-ctx context selected-flow-bind-traces)
+        locals-map (trace-locals curr-trace bind-traces)]
+    (->> locals-map
+         (into [])
+         (sort-by first)
+         (into [["result" result true]]))))
 
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])

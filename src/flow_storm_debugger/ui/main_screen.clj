@@ -6,7 +6,9 @@
             [flow-storm-debugger.highlighter :as highlighter]
             [flow-storm-debugger.ui.db :as ui.db]
             [flow-storm-debugger.ui.subs :as ui.subs]
-            [flow-storm-debugger.ui.events :as ui.events])
+            [flow-storm-debugger.ui.events :as ui.events]
+            [clojure.string :as str]
+            [cljfx.ext.list-view :as fx.ext.list-view])
   (:import [javafx.scene.web WebView]))
 
 (def event-handler
@@ -83,8 +85,33 @@
    :style {:-fx-background-color :pink}
    :children []})
 
+(defn calls-tree-pane [{:keys [fx/context]}]
+  {:fx/type :pane
+   :style {:-fx-background-color :red}
+   :children []})
+
+(defn locals-pane [{:keys [fx/context]}]
+  (let [locals (fx/sub-ctx context ui.subs/selected-flow-current-locals)]
+    {:fx/type fx.ext.list-view/with-selection-props
+     :props {:selection-mode :single
+             :on-selected-item-changed (fn [[_ lvalue]] (event-handler {:event/type ::ui.events/set-pprint-panel
+                                                                        :content lvalue}))}
+     :desc {:fx/type :list-view
+            :cell-factory {:fx/cell-type :list-cell                    
+                           :describe (fn [[lname lvalue result?]]                                
+                                       {:text ""
+                                        :graphic {:fx/type :h-box
+                                                  :children [{:fx/type :label
+                                                              :style {:-fx-padding [0 10 0 0]
+                                                                      :-fx-font-weight (if result? :bold :normal)
+                                                                      :-fx-text-fill (if result? :green :blue)}
+                                                              :text lname}
+                                                             {:fx/type :label
+                                                              :text (if lvalue (str/replace lvalue #"\n" " ") "")}]}})}
+            :items locals}}))
+
 (defn pprint-pane [{:keys [fx/context]}]
-  (let [result (fx/sub-ctx context ui.subs/selected-flow-result)]
+  (let [result (fx/sub-ctx context ui.subs/selected-flow-pprint-panel-content)]
    {:fx/type :text-area
     :text result}))
 
@@ -103,14 +130,17 @@
                              :graphic {:fx/type :label :text "Layers"}
                              :content {:fx/type layers-pane}
                              :id "layers"
+                             :closable false}
+                            {:fx/type :tab
+                             :graphic {:fx/type :label :text "Tree"}
+                             :content {:fx/type calls-tree-pane}
+                             :id "tree"
                              :closable false}]}
                     
                     {:fx/type :split-pane
                      :orientation :vertical
                      :items [{:fx/type pprint-pane}
-                             {:fx/type :pane
-                              :style {:-fx-background-color :yellow}
-                              :children []}]}]}})
+                             {:fx/type locals-pane}]}]}})
 
 (defn flow-tabs [{:keys [fx/context]}]
   (let [flows-tabs (ui.subs/flows-tabs context)]

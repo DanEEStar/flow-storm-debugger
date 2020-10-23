@@ -5,5 +5,6 @@
 (defonce *state
   (atom (fx/create-context {:flows {}
                             :selected-flow-id nil                            
-                            :connected-clients 0}
+                            :stats {:connected-clients 0
+                                    :received-traces-count 0}}
                            cache/lru-cache-factory)))

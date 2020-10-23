@@ -47,10 +47,14 @@
     :desc {:fx/type :web-view}}))
 
 (defn bottom-bar [{:keys [fx/context]}]
-  {:fx/type :pane
-   :pref-height 50
-   :style {:-fx-background-color :orange}
-   :children []})
+  (let [{:keys [received-traces-count connected-clients]} (fx/sub-ctx context ui.subs/stats)]
+    {:fx/type :border-pane
+     ;;:pref-height 50
+     :right {:fx/type :label
+             :text (format "Connected clients: %d Received traces: %d" connected-clients received-traces-count)}
+     :style {:-fx-background-color "#ddd"
+             :-fx-padding 5}
+     }))
 
 (defn load-button [_]
   {:fx/type :button
@@ -92,7 +96,7 @@
      :desc {:fx/type :list-view
             :cell-factory {:fx/cell-type :list-cell                    
                            :describe (fn [{:keys [result selected?]}]                                
-                                       {:text result})}
+                                       {:text (str/replace result #"\n" " ")})}
             :items layers}}))
 
 (defn calls-tree [{:keys [fx/context fn-call-tree current-trace-idx]}]
@@ -124,9 +128,11 @@
   (let [fn-call-tree (fx/sub-ctx context ui.subs/fn-call-traces)
         current-trace-idx (fx/sub-ctx context ui.subs/selected-flow-trace-idx)]
    {:fx/type :pane
-    :children [{:fx/type calls-tree
-                :fn-call-tree fn-call-tree
-                :current-trace-idx current-trace-idx}]}))
+    :children (if fn-call-tree
+                [{:fx/type calls-tree
+                                  :fn-call-tree fn-call-tree
+                  :current-trace-idx current-trace-idx}]
+                [])}))
 
 (defn locals-pane [{:keys [fx/context]}]
   (let [locals (fx/sub-ctx context ui.subs/selected-flow-current-locals)]
@@ -181,7 +187,7 @@
                              {:fx/type locals-pane}]}]}})
 
 (defn flow-tabs [{:keys [fx/context]}]
-  (let [flows-tabs (ui.subs/flows-tabs context)]
+  (let [flows-tabs (fx/sub-ctx context ui.subs/flows-tabs)]
     {:fx/type :tab-pane
      :tabs (->> flows-tabs
                 (mapv (fn [[flow-id tab-name]]
@@ -198,14 +204,14 @@
                          :closable true})))}))
 
 (defn main-screen [{:keys [fx/context]}]
-  (let [flows (fx/sub-ctx context ui.subs/flows)]
+  (let [no-flows? (fx/sub-ctx context ui.subs/empty-flows?)]
    {:fx/type :stage
     :showing true
     :width 1000
     :height 1000
     :scene {:fx/type :scene
             :root {:fx/type :border-pane                  
-                   :center (if (empty? flows)
+                   :center (if no-flows?
                              {:fx/type load-button}
                              {:fx/type flow-tabs})
                    :bottom {:fx/type bottom-bar}}}}))

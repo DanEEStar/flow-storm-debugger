@@ -56,26 +56,35 @@
         (when (#{:flow-storm/init-trace :flow-storm/add-trace :flow-storm/add-bind-trace} evk)
           (send-fn "browser" event))))))
 
-(defn dispatch-local-event [event]
+(defn dispatch-ws-event [event]
   (let [[e-key e-data-map] event]
+    
     (case e-key
       :flow-storm/add-trace                (swap! ui.db/*state fx/swap-context events.traces/add-trace e-data-map) 
       :flow-storm/init-trace               (swap! ui.db/*state fx/swap-context events.traces/init-trace e-data-map)        
       :flow-storm/add-bind-trace           (swap! ui.db/*state fx/swap-context events.traces/add-bind-trace e-data-map) 
-      :flow-storm/connected-clients-update (swap! ui.db/*state fx/swap-context assoc :connected-clients (:count e-data-map))
       (println "Donw know how to handle" event))
+        
+    (when (#{:flow-storm/add-trace :flow-storm/init-trace :flow-storm/add-bind-trace} e-key)
+      (swap! ui.db/*state fx/swap-context update-in [:stats :received-traces-count] inc))
+    
     (println "Got event " event)))
 
 (defn -main [& args]
   (let [{:keys [ws-routes ws-send-fn ch-recv connected-uids-atom]} (build-websocket)
-        port 7722
-        dispatch-event dispatch-local-event]
+        port 7722]
 
     (go-loop []
       (try
-        (let [event (:event (async/<! ch-recv))]
-          (println "DISPATCHING " event)
-         (dispatch-event event))
+        (let [msg (async/<! ch-recv)
+              [e-key e-data-map :as event]  (:event msg)]
+          
+          (if (#{:chsk/uidport-open :chsk/uidport-close} e-key)
+            (let [clients-count (-> msg :connected-uids deref :any count)]
+              (swap! ui.db/*state fx/swap-context assoc-in [:stats :connected-clients] clients-count))
+            
+            (dispatch-ws-event event)))
+        
         (catch Exception e
           (println "ERROR handling ws message")))
       (recur))

@@ -97,7 +97,7 @@
     (->> locals-map
          (into [])
          (sort-by first)
-         (into [["result" result true]]))))
+         (into [["=>" result true]]))))
 
 (defn selected-flow-similar-traces [context]
   (let [{:keys [traces trace-idx]} (fx/sub-ctx context selected-flow)
@@ -110,6 +110,9 @@
                                            (= (:coor t)    coor)
                                            (:result t)))))]
     similar-traces))
+
+(defn empty-flows? [context]
+  (empty? (fx/sub-val context :flows)))
 
 (defn fn-call-trace? [trace]
   (:args-vec trace))
@@ -158,6 +161,8 @@
     (when (some #(:fn-name %) call-traces)
       (build-tree-from-traces call-traces))))
 
+(defn stats [context]
+  (fx/sub-val context :stats))
 
 (comment
   (require '[flow-storm-debugger.ui.db :as ui.db])

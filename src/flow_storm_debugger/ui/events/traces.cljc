@@ -18,8 +18,7 @@
                                                 [gen-trace]
                                                 (conj traces gen-trace)))))
       (assoc-in [:flows flow-id :trace-idx] 0)
-      (update-in [:flows flow-id :bind-traces] #(or % []))
-      (assoc-in [:flows flow-id :local-panel-symbol] nil)))
+      (update-in [:flows flow-id :bind-traces] #(or % []))))
 
 (defn add-bind-trace [db {:keys [flow-id form-id form-flow-id coor symbol value] :as trace}]
   (let [flow-id (or flow-id

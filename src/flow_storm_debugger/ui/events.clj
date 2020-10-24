@@ -36,22 +36,16 @@
 (defmethod dispatch-event ::set-pprint-panel [{:keys [fx/context content]}]
   {:context (fx/swap-context context events.flows/set-pprint-panel content)})
 
-;; (defmethod dispatch-event ::save-selected-flow [{:keys [fx/context]}]
-;;   ;;{:context (fx/swap-context context )}
-;;   )
-;; (defmethod dispatch-event ::load-flow [{:keys [fx/context]}]
-;;   ;;{:context (fx/swap-context context )}
-;;   )
+(defmethod dispatch-event ::open-dialog [{:keys [fx/context dialog]}]
+  {:context (fx/swap-context context events.flows/open-dialog dialog)})
 
-;; (defmethod dispatch-event ::select-result-panel [{:keys [fx/context]}]
-;;   {:context (fx/swap-context context )}
-;;   )
-;; (defmethod dispatch-event ::show-local [{:keys [fx/context]}]
-;;   {:context (fx/swap-context context )}
-;;   )
-;; (defmethod dispatch-event ::hide-modals [{:keys [fx/context]}]
-;;   {:context (fx/swap-context context )}
-;;   )
-;; (defmethod dispatch-event ::open-save-panel [{:keys [fx/context]}]
-;;   {:context (fx/swap-context context )}
-;;   )
+(defmethod dispatch-event ::save-selected-flow [{:keys [fx/context file-name]}]
+  (let [selected-flow-id (fx/sub-val context :selected-flow-id)
+        flow (-> (fx/sub-val context :flows)
+                 (get selected-flow-id)
+                 (select-keys [:forms :traces :trace-idx :bind-traces])
+                 (assoc :flow-id selected-flow-id)
+                 pr-str)]
+    (cond-> {:context (fx/swap-context context assoc :open-dialog nil)}
+      file-name (assoc :save-file {:file-name file-name
+                                   :file-content flow}))))

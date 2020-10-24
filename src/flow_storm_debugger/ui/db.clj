@@ -6,5 +6,6 @@
   (atom (fx/create-context {:flows {}
                             :selected-flow-id nil                            
                             :stats {:connected-clients 0
-                                    :received-traces-count 0}}
+                                    :received-traces-count 0}
+                            :open-dialog nil}
                            cache/lru-cache-factory)))

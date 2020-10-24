@@ -35,31 +35,8 @@
     (-> db'
         (set-pprint-panel result))))
 
-
-#?(:cljs
-   (defn save-selected-flow [cofx [file-name]]
-     (let [selected-flow-id (get-in cofx [:db :selected-flow-id])
-           selected-flow (get-in cofx [:db :flows selected-flow-id])]
-       {:http-xhrio {:method          :post
-                     :uri             "http://localhost:7722/save-flow"
-                     :timeout         8000
-                     :params (-> selected-flow
-                                 (select-keys [:forms :traces :trace-idx :bind-traces])
-                                 (assoc :flow-id selected-flow-id)
-                                 pr-str)
-                     :url-params {:file-name file-name}
-                     :format (ajax/text-request-format)
-                     :response-format (ajax/raw-response-format)
-                     :on-success      [:flow-storm-debugger.ui.events/hide-modals]
-                     :on-failure      []}}))
-   :clj
-   (defn save-selected-flow [cofx [file-name]]
-     (let [selected-flow-id (get-in cofx [:db :selected-flow-id])
-           selected-flow (get-in cofx [:db :flows selected-flow-id])]
-       (spit file-name (-> selected-flow
-                           (select-keys [:forms :traces :trace-idx :bind-traces])
-                           (assoc :flow-id selected-flow-id)
-                           pr-str)))))
+(defn open-dialog [db dialog]
+  (assoc db :open-dialog dialog))
 
 (defn load-flow [db flow]
   (let [flow-id (:flow-id flow)]

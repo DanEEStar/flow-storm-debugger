@@ -9,7 +9,11 @@
             [flow-storm-debugger.ui.events :as ui.events]
             [clojure.string :as str]
             [cljfx.ext.list-view :as fx.ext.list-view])
-  (:import [javafx.scene.web WebView]))
+  (:import [javafx.scene.web WebView]
+           [javafx.scene.control DialogEvent Dialog]))
+
+(defn save-file-fx [{:keys [file-name file-content]} dispatch!]
+  (spit file-name file-content))
 
 (def event-handler
   (-> ui.events/dispatch-event
@@ -18,15 +22,7 @@
       (fx/wrap-effects
        {:context (fx/make-reset-effect ui.db/*state)
         :dispatch fx/dispatch-effect
-        ;;:http custom-fx
-        })))
-
-#_(defn event-handler [ev]
-  (println "GOT ev" ev)
-  {:context (fx/swap-context (:fx/context ev) update :counter inc)})
-
-#_(defn custom-fx [v dispatch!]
-  (println "FX called with " v))
+        :save-file save-file-fx})))
 
 (def ext-with-html
   (fx/make-ext-with-props
@@ -82,7 +78,10 @@
     :center {:fx/type :label :text (str trace-idx "/" last-trace)}
     :right {:fx/type :h-box
             :children [{:fx/type load-button}
-                       {:fx/type :button :text "Save"}]}}))
+                       {:fx/type :button
+                        :text "Save"
+                        :on-mouse-clicked {:event/type ::ui.events/open-dialog
+                                           :dialog :save-flow-dialog}}]}}))
 
 (defn layers-pane [{:keys [fx/context]}]
   (let [layers (fx/sub-ctx context ui.subs/selected-flow-similar-traces)
@@ -96,7 +95,7 @@
      :desc {:fx/type :list-view
             :cell-factory {:fx/cell-type :list-cell                    
                            :describe (fn [{:keys [result selected?]}]                                
-                                       {:text (str/replace result #"\n" " ")})}
+                                       {:text (when result (str/replace result #"\n" " "))})}
             :items layers}}))
 
 (defn calls-tree [{:keys [fx/context fn-call-tree current-trace-idx]}]
@@ -203,18 +202,33 @@
                          :id (str flow-id)
                          :closable true})))}))
 
+
+(defn save-flow-dialog [_]
+  {:fx/type :text-input-dialog
+   :showing true
+   :header-text "Filename:"
+   :on-hidden (fn [^DialogEvent e]
+                (let [file-name (.getResult ^Dialog (.getSource e))]
+                  (event-handler {:event/type ::ui.events/save-selected-flow
+                                  :file-name file-name})))})
+
 (defn main-screen [{:keys [fx/context]}]
-  (let [no-flows? (fx/sub-ctx context ui.subs/empty-flows?)]
-   {:fx/type :stage
-    :showing true
-    :width 1000
-    :height 1000
-    :scene {:fx/type :scene
-            :root {:fx/type :border-pane                  
-                   :center (if no-flows?
-                             {:fx/type load-button}
-                             {:fx/type flow-tabs})
-                   :bottom {:fx/type bottom-bar}}}}))
+  (let [no-flows? (fx/sub-ctx context ui.subs/empty-flows?)        
+        open-dialog (fx/sub-val context :open-dialog)
+        main-screen {:fx/type :stage
+                     :showing true
+                     :width 1000
+                     :height 1000
+                     :scene {:fx/type :scene
+                             :root {:fx/type :border-pane                  
+                                    :center (if no-flows?
+                                              {:fx/type load-button}
+                                              {:fx/type flow-tabs})
+                                    :bottom {:fx/type bottom-bar}}}}]
+    {:fx/type fx/ext-many
+     :desc (cond-> [main-screen]
+             open-dialog (into [{:fx/type (case open-dialog
+                                            :save-flow-dialog save-flow-dialog)}]))}))
 
 (defonce renderer
   (fx/create-renderer
@@ -228,44 +242,12 @@
                                         (fx/fn->lifecycle-with-context %))
            :fx.opt/map-event-handler event-handler}))
 
-(renderer)
+
 (comment
+  (renderer)
   (fx/mount-renderer ui.db/*state renderer)
   
 (event-handler {:event/type ::ui.events/select-flow
                 :flow-id 333})
-  (swap! *state fx/swap-context update :counter inc)
-  (swap! *state fx/swap-context update :tasks conj {:name "AAA"})
 
-  #_{:fx/type :grid-pane
-     :column-constraints [{:fx/type :column-constraints :max-width 100}]
-     :row-constraints [{:fx/type :row-constraints :max-height 100}]
-     :children [{:fx/type :pane
-                 :grid-pane/column 0
-                 :grid-pane/row 0
-                 :grid-pane/hgrow :always
-                 :grid-pane/vgrow :always                                       
-                 :style {:-fx-background-color :red}
-                 :children []}
-                {:fx/type :pane
-                 :grid-pane/column 1
-                 :grid-pane/row 0
-                 :grid-pane/hgrow :always
-                 :grid-pane/vgrow :always
-                 :style {:-fx-background-color :green}
-                 :children []}
-                {:fx/type :pane
-                 :grid-pane/column 1
-                 :grid-pane/row 1
-                 :grid-pane/hgrow :always
-                 :grid-pane/vgrow :always
-                 :style {:-fx-background-color :blue}
-                 :children []}
-                {:fx/type :pane
-                 :grid-pane/column 0
-                 :grid-pane/row 1
-                 :grid-pane/hgrow :always
-                 :grid-pane/vgrow :always
-                 :style {:-fx-background-color :yellow}
-                 :children []}]}
   )

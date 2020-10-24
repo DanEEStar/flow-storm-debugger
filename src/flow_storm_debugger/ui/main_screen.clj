@@ -8,9 +8,11 @@
             [flow-storm-debugger.ui.subs :as ui.subs]
             [flow-storm-debugger.ui.events :as ui.events]
             [clojure.string :as str]
-            [cljfx.ext.list-view :as fx.ext.list-view])
+            [cljfx.ext.list-view :as fx.ext.list-view]
+            [flow-storm-debugger.ui.styles :as styles])
   (:import [javafx.scene.web WebView]
-           [javafx.scene.control DialogEvent Dialog]))
+           [javafx.scene.control DialogEvent Dialog]
+           [javafx.geometry Insets]))
 
 (defn save-file-fx [{:keys [file-name file-content]} dispatch!]
   (spit file-name file-content))
@@ -27,7 +29,11 @@
 (def ext-with-html
   (fx/make-ext-with-props
     {:html (fx.prop/make
-             (fx.mutator/setter #(.loadContent (.getEngine ^WebView %1) %2))
+            (fx.mutator/setter #(.loadContent (let [engine (.getEngine ^WebView %1)]
+                                                (.setUserStyleSheetLocation engine (-> (clojure.java.io/file "web-view-styles.css")
+                                                                                       (.toURI)
+                                                                                       (.toString)))
+                                                engine) %2))
              fx.lifecycle/scalar)}))
 
 (defn code-browser [{:keys [fx/context]}]
@@ -48,8 +54,7 @@
      ;;:pref-height 50
      :right {:fx/type :label
              :text (format "Connected clients: %d Received traces: %d" connected-clients received-traces-count)}
-     :style {:-fx-background-color "#ddd"
-             :-fx-padding 5}
+     :style-class ["bottom-bar"]     
      }))
 
 (defn load-button [_]
@@ -60,28 +65,29 @@
 (defn controls-pane [{:keys [fx/context]}]
   (let [{:keys [traces trace-idx]} (fx/sub-ctx context ui.subs/selected-flow)
         last-trace (dec (count traces))]
-   {:fx/type :border-pane
-    :style {:-fx-background-color :pink
-            :-fx-padding 10}
-    :left {:fx/type :h-box
-           :children [{:fx/type :button
-                       :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx :trace-idx 0}
-                       :text "Reset"}
-                      {:fx/type :button
-                       :on-mouse-clicked {:event/type ::ui.events/selected-flow-prev}
-                       :text "<"
-                       :disable (zero? trace-idx)}
-                      {:fx/type :button
-                       :on-mouse-clicked {:event/type ::ui.events/selected-flow-next}
-                       :text ">"
-                       :disable (>= trace-idx last-trace)}]}
-    :center {:fx/type :label :text (str trace-idx "/" last-trace)}
-    :right {:fx/type :h-box
-            :children [{:fx/type load-button}
+    {:fx/type :border-pane
+     :style-class ["controls-pane"]    
+     :left {:fx/type :h-box
+            :spacing 5            
+            :children [{:fx/type :button
+                        :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx :trace-idx 0}
+                        :text "Reset"}
                        {:fx/type :button
-                        :text "Save"
-                        :on-mouse-clicked {:event/type ::ui.events/open-dialog
-                                           :dialog :save-flow-dialog}}]}}))
+                        :on-mouse-clicked {:event/type ::ui.events/selected-flow-prev}
+                        :text "<"
+                        :disable (zero? trace-idx)}
+                       {:fx/type :button
+                        :on-mouse-clicked {:event/type ::ui.events/selected-flow-next}
+                        :text ">"
+                        :disable (>= trace-idx last-trace)}]}
+     :center {:fx/type :label :text (str trace-idx "/" last-trace)}
+     :right {:fx/type :h-box
+             :spacing 5
+             :children [{:fx/type load-button}
+                        {:fx/type :button
+                         :text "Save"
+                         :on-mouse-clicked {:event/type ::ui.events/open-dialog
+                                            :dialog :save-flow-dialog}}]}}))
 
 (defn layers-pane [{:keys [fx/context]}]
   (let [layers (fx/sub-ctx context ui.subs/selected-flow-similar-traces)
@@ -155,14 +161,17 @@
 
 (defn pprint-pane [{:keys [fx/context]}]
   (let [result (fx/sub-ctx context ui.subs/selected-flow-pprint-panel-content)]
-   {:fx/type :text-area
-    :text result}))
+    {:fx/type :text-area
+     :editable false
+     :style-class ["pane-text-area"]
+     :text result}))
 
 (defn selected-flow [{:keys [fx/context]}]
   {:fx/type :border-pane
    :style {:-fx-padding 10}
    :top {:fx/type controls-pane}
    :center {:fx/type :split-pane
+            :border-pane/margin (Insets. 10 0 0 0)
             :items [{:fx/type :tab-pane
                      :tabs [{:fx/type :tab
                              :graphic {:fx/type :label :text "Code"}
@@ -212,17 +221,48 @@
                   (event-handler {:event/type ::ui.events/save-selected-flow
                                   :file-name file-name})))})
 
+#_[:div.no-flows
+         [:div "No flows traced yet. Trace some forms using "
+          [:a {:href "http://github.com/jpmonettas/flow-storm"} "flow-storm.api/trace"]
+          " and you will see them displayed here."]
+         [:div.load "Or " [:a {:href "#" :on-click show-file-loader} "click here"] " to load some traces from your disk."]]
+(defn no-flows [_]
+  {:fx/type :anchor-pane
+   :style-class ["no-flows"]
+   :children [{:fx/type :v-box
+               :pref-width 200
+               :anchor-pane/left 100
+               :anchor-pane/right 100
+               :anchor-pane/top 100
+               :alignment :center
+               :spacing 20
+               :children [{:fx/type :label
+                           :pref-width Double/MAX_VALUE
+                           :alignment :center
+                           :text "No flows traced yet. Trace some forms using flow-storm.api/trace and you will see them displayed here."}
+                          {:fx/type :h-box
+                           :alignment :center
+                           :spacing 10
+                           :pref-width Double/MAX_VALUE
+                           :children [{:fx/type :label
+                                       :text "Or"}
+                                      {:fx/type load-button}
+                                      {:fx/type :label
+                                       :text "some traces from your disk."}]}]}]})
+
 (defn main-screen [{:keys [fx/context]}]
   (let [no-flows? (fx/sub-ctx context ui.subs/empty-flows?)        
         open-dialog (fx/sub-val context :open-dialog)
+        styles (:cljfx.css/url (fx/sub-val context :style))
         main-screen {:fx/type :stage
                      :showing true
-                     :width 1000
-                     :height 1000
+                     :width 1600
+                     :height 900
                      :scene {:fx/type :scene
+                             :stylesheets (if styles [styles] [])
                              :root {:fx/type :border-pane                  
                                     :center (if no-flows?
-                                              {:fx/type load-button}
+                                              {:fx/type no-flows}
                                               {:fx/type flow-tabs})
                                     :bottom {:fx/type bottom-bar}}}}]
     {:fx/type fx/ext-many
@@ -242,10 +282,15 @@
                                         (fx/fn->lifecycle-with-context %))
            :fx.opt/map-event-handler event-handler}))
 
-
+(renderer)
 (comment
-  (renderer)
-  (fx/mount-renderer ui.db/*state renderer)
+  
+  (do
+    (fx/mount-renderer ui.db/*state renderer)
+
+    (add-watch #'styles/style :refresh-app (fn [_ _ _ _]
+                                             (swap! ui.db/*state fx/swap-context assoc :style styles/style))))
+  (remove-watch #'styles/style :refresh-app)
   
 (event-handler {:event/type ::ui.events/select-flow
                 :flow-id 333})

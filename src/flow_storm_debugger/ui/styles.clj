@@ -8,13 +8,22 @@
    (let [background-color-2 "#1e1e1e"
          background-color "#424242"
          basic-font-color "#eaeaea"
-         button-back "#4b79b9"]
+         button-back "#4b79b9"
+         locals-label-color :pink
+         return-label-color "#00ffa5"
+         icon (fn [i] {:-fx-icon-code i
+                       :-fx-icon-color basic-font-color
+                       :-fx-icon-size 16})]
      {".root" {:-fx-background-color background-color
                " .label" {:-fx-text-fill basic-font-color}
                " .button" {:-fx-background-color button-back
                            :-fx-text-fill basic-font-color}
+               " .scroll-bar" {" .track-background" {:-fx-background-color background-color-2}
+                               " .thumb" {:-fx-background-color background-color}}
                " .bottom-bar" {:-fx-background-color background-color-2
                                :-fx-padding 5}
+               " .list-view" {" .list-cell:even" {:-fx-background-color background-color}
+                              " .list-cell:odd" {:-fx-background-color "#4a4a4a"}}
                " .no-flows" {:-fx-font-size 15}
                " .controls-pane" {:-fx-background-color background-color-2
                                  :-fx-padding 10}         
@@ -26,10 +35,16 @@
                                    :-fx-padding 10
                                    " .scroll-pane" {" .content" {:-fx-background-color background-color}}}
                " .web-view" {:-fx-background-color :blue}
-               " .load-button" {" .ikonli-font-icon" {:-fx-icon-code "mdi-folder-plus"
-                                                      :-fx-icon-color basic-font-color
-                                                      :-fx-icon-size 30}}
-               " .strong-text" {:-fx-font-weight :bold}}})))
+               " .load-button" {" .ikonli-font-icon" (icon "mdi-folder-plus")}
+               " .save-button" {" .ikonli-font-icon" (icon "mdi-content-save")}
+               " .reset-button" {" .ikonli-font-icon" (icon "mdi-reload")}
+               " .prev-button" {" .ikonli-font-icon" (icon "mdi-chevron-left")}
+               " .next-button" {" .ikonli-font-icon" (icon "mdi-chevron-right")}
+               " .result-label" {" .ikonli-font-icon" (merge (icon "mdi-arrow-right-bold")
+                                                             {:-fx-icon-color return-label-color})}
+               " .strong-text" {:-fx-font-weight :bold}
+               " .locals-view" {" .label" {:-fx-padding [0 10 0 0]}
+                                " .local-name" {:-fx-text-fill locals-label-color}}}})))
 #_(def style2
   (css/register ::style
     (let [base-color "#222"

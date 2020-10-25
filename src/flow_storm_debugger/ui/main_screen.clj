@@ -64,11 +64,13 @@
      :style-class ["bottom-bar"]     
      }))
 
-(defn load-button [_]
-  {:fx/type :button
-   :text "Load"
-   :style-class ["button" "load-button"]
-   :on-action {:event/type ::ui.events/load-flow}})
+(defn load-button [{:keys [icon?]}]
+  (cond-> {:fx/type :button
+           :text "Load"
+           :style-class ["button" "load-button"]
+           :on-action {:event/type ::ui.events/load-flow}}
+    icon? (assoc :graphic {:fx/type font-icon})
+    icon? (assoc :text "")))
 
 (defn controls-pane [{:keys [fx/context]}]
   (let [{:keys [traces trace-idx]} (fx/sub-ctx context ui.subs/selected-flow)
@@ -79,21 +81,26 @@
             :spacing 5            
             :children [{:fx/type :button
                         :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx :trace-idx 0}
-                        :text "Reset"}
+                        :style-class ["button" "reset-button"]
+                        :graphic {:fx/type font-icon}}
                        {:fx/type :button
                         :on-mouse-clicked {:event/type ::ui.events/selected-flow-prev}
-                        :text "<"
+                        :style-class ["button" "prev-button"]
+                        :graphic {:fx/type font-icon}
                         :disable (zero? trace-idx)}
                        {:fx/type :button
                         :on-mouse-clicked {:event/type ::ui.events/selected-flow-next}
-                        :text ">"
+                        :style-class ["button" "next-button"]
+                        :graphic {:fx/type font-icon}
                         :disable (>= trace-idx last-trace)}]}
      :center {:fx/type :label :text (str trace-idx "/" last-trace)}
      :right {:fx/type :h-box
              :spacing 5
-             :children [{:fx/type load-button}
+             :children [{:fx/type load-button
+                         :icon? true}
                         {:fx/type :button
-                         :text "Save"
+                         :style-class ["button" "save-button"]
+                         :graphic {:fx/type font-icon}
                          :on-mouse-clicked {:event/type ::ui.events/open-dialog
                                             :dialog :save-flow-dialog}}]}}))
 
@@ -154,16 +161,20 @@
              :on-selected-item-changed (fn [[_ lvalue]] (event-handler {:event/type ::ui.events/set-pprint-panel
                                                                         :content lvalue}))}
      :desc {:fx/type :list-view
+            :style-class ["list-view" "locals-view"]
             :cell-factory {:fx/cell-type :list-cell                    
                            :describe (fn [[lname lvalue result?]]                                
                                        {:text ""
                                         :graphic {:fx/type :h-box
-                                                  :children [{:fx/type :label
-                                                              :style {:-fx-padding [0 10 0 0]
-                                                                      :-fx-font-weight (if result? :bold :normal)
-                                                                      :-fx-text-fill (if result? :green :blue)}
-                                                              :text lname}
+                                                  :children [(if result?
+                                                               {:fx/type :label
+                                                                :style-class ["label" "result-label"]
+                                                                :graphic {:fx/type font-icon}}
+                                                               {:fx/type :label
+                                                                :style-class ["label" "local-name"]
+                                                                :text lname})
                                                              {:fx/type :label
+                                                              :style-class ["label" "local-val"]
                                                               :text (if lvalue (str/replace lvalue #"\n" " ") "")}]}})}
             :items locals}}))
 

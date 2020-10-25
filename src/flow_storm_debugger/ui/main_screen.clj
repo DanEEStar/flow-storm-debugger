@@ -9,10 +9,12 @@
             [flow-storm-debugger.ui.events :as ui.events]
             [clojure.string :as str]
             [cljfx.ext.list-view :as fx.ext.list-view]
+            [cljfx.composite :as composite]
             [flow-storm-debugger.ui.styles :as styles])
   (:import [javafx.scene.web WebView]
            [javafx.scene.control DialogEvent Dialog]
-           [javafx.geometry Insets]))
+           [javafx.geometry Insets]
+           [org.kordamp.ikonli.javafx FontIcon]))
 
 (defn save-file-fx [{:keys [file-name file-content]} dispatch!]
   (spit file-name file-content))
@@ -25,6 +27,11 @@
        {:context (fx/make-reset-effect ui.db/*state)
         :dispatch fx/dispatch-effect
         :save-file save-file-fx})))
+
+(defn font-icon [_]
+  ;; Check icons here
+  ;; https://kordamp.org/ikonli/cheat-sheet-materialdesign.html
+  {:fx/type fx/ext-instance-factory :create #(FontIcon.)})
 
 (def ext-with-html
   (fx/make-ext-with-props
@@ -60,6 +67,7 @@
 (defn load-button [_]
   {:fx/type :button
    :text "Load"
+   :style-class ["button" "load-button"]
    :on-action {:event/type ::ui.events/load-flow}})
 
 (defn controls-pane [{:keys [fx/context]}]
@@ -221,11 +229,6 @@
                   (event-handler {:event/type ::ui.events/save-selected-flow
                                   :file-name file-name})))})
 
-#_[:div.no-flows
-         [:div "No flows traced yet. Trace some forms using "
-          [:a {:href "http://github.com/jpmonettas/flow-storm"} "flow-storm.api/trace"]
-          " and you will see them displayed here."]
-         [:div.load "Or " [:a {:href "#" :on-click show-file-loader} "click here"] " to load some traces from your disk."]]
 (defn no-flows [_]
   {:fx/type :anchor-pane
    :style-class ["no-flows"]
@@ -236,10 +239,16 @@
                :anchor-pane/top 100
                :alignment :center
                :spacing 20
-               :children [{:fx/type :label
+               :children [{:fx/type :text-flow
                            :pref-width Double/MAX_VALUE
-                           :alignment :center
-                           :text "No flows traced yet. Trace some forms using flow-storm.api/trace and you will see them displayed here."}
+                           :text-alignment :center
+                           :children [{:fx/type :label
+                                       :text "No flows traced yet. Trace some forms using"}
+                                      {:fx/type :label
+                                       :style-class ["label" "strong-text"]
+                                       :text " flow-storm.api/trace "}
+                                      {:fx/type :label
+                                       :text "and you will see them displayed here."}]}
                           {:fx/type :h-box
                            :alignment :center
                            :spacing 10
@@ -289,7 +298,8 @@
     (fx/mount-renderer ui.db/*state renderer)
 
     (add-watch #'styles/style :refresh-app (fn [_ _ _ _]
-                                             (swap! ui.db/*state fx/swap-context assoc :style styles/style))))
+                                             (swap! ui.db/*state fx/swap-context assoc :style styles/style)))
+    )
   (remove-watch #'styles/style :refresh-app)
   
 (event-handler {:event/type ::ui.events/select-flow

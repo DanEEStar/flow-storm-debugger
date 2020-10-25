@@ -5,8 +5,8 @@
 (def style 
   (css/register
    ::style
-   (let [background-color "#1e1e1e"
-         background-color-2 "#424242"
+   (let [background-color-2 "#1e1e1e"
+         background-color "#424242"
          basic-font-color "#eaeaea"
          button-back "#4b79b9"]
      {".root" {:-fx-background-color background-color
@@ -25,7 +25,11 @@
                                    :-fx-background-color background-color
                                    :-fx-padding 10
                                    " .scroll-pane" {" .content" {:-fx-background-color background-color}}}
-               " .web-view" {:-fx-background-color :blue}}})))
+               " .web-view" {:-fx-background-color :blue}
+               " .load-button" {" .ikonli-font-icon" {:-fx-icon-code "mdi-folder-plus"
+                                                      :-fx-icon-color basic-font-color
+                                                      :-fx-icon-size 30}}
+               " .strong-text" {:-fx-font-weight :bold}}})))
 #_(def style2
   (css/register ::style
     (let [base-color "#222"

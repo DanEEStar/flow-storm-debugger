@@ -20,6 +20,4 @@
                                      ;;:local/root "/home/jmonetta/my-projects/flow-storm"
                                      }
 
-        }
- :aliases {:garden {:extra-deps {lambdaisland/garden-watcher {:mvn/version "0.3.5"}}
-                    :extra-paths ["styles-src"]}}}
+        }}

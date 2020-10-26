@@ -229,6 +229,7 @@
      :tabs (->> flows-tabs
                 (mapv (fn [[flow-id tab-name]]
                         {:fx/type :tab
+                         :fx/key (str flow-id)
                          :style-class ["tab" "flow-tab"]
                          :on-closed {:event/type ::ui.events/remove-flow
                                      :flow-id flow-id}

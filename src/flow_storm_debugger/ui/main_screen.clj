@@ -10,7 +10,8 @@
             [clojure.string :as str]
             [cljfx.ext.list-view :as fx.ext.list-view]
             [cljfx.composite :as composite]
-            [flow-storm-debugger.ui.styles :as styles])
+            [flow-storm-debugger.ui.styles :as styles]
+            [clojure.java.io :as io])
   (:import [javafx.scene.web WebView]
            [javafx.scene.control DialogEvent Dialog]
            [javafx.geometry Insets]
@@ -37,7 +38,7 @@
   (fx/make-ext-with-props
     {:html (fx.prop/make
             (fx.mutator/setter #(.loadContent (let [engine (.getEngine ^WebView %1)]
-                                                (.setUserStyleSheetLocation engine (-> (clojure.java.io/file "web-view-styles.css")
+                                                (.setUserStyleSheetLocation engine (-> (clojure.java.io/resource "web-view-styles.css")
                                                                                        (.toURI)
                                                                                        (.toString)))
                                                 engine) %2))
@@ -114,19 +115,21 @@
                                                          :trace-idx trace-idx}))
              :selected-item selected-item}
      :desc {:fx/type :list-view
-            :cell-factory {:fx/cell-type :list-cell                    
+            :cell-factory {:fx/cell-type :list-cell
                            :describe (fn [{:keys [result selected?]}]                                
-                                       {:text (when result (str/replace result #"\n" " "))})}
+                                       {:text ""
+                                        :graphic {:fx/type :label
+                                                  :style-class ["label" "clickable"]
+                                                  :text (when result (str/replace result #"\n" " "))}})}
             :items layers}}))
 
 (defn calls-tree [{:keys [fx/context fn-call-tree current-trace-idx]}]
   (when-not (empty? fn-call-tree)
     (let [{:keys [fn-name args-vec result childs call-trace-idx ret-trace-idx]} fn-call-tree]
       {:fx/type :v-box
-       :style {:-fx-padding [10 0 10 10]
-               :-fx-border-color :green
-               :-fx-border-width [0 0 0 1]}
+       :style-class ["v-box" "calls-tree"]
        :children (-> [{:fx/type :h-box
+                       :style-class ["h-box" "clickable"]
                        :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx
                                         :trace-idx call-trace-idx}
                        :children [{:fx/type :label :text "("}
@@ -139,6 +142,7 @@
                               :fn-call-tree c
                               :current-trace-idx current-trace-idx}))
                      (into [{:fx/type :h-box
+                             :style-class ["h-box" "clickable"]
                              :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx
                                               :trace-idx ret-trace-idx}
                              :children [{:fx/type :label :text (str result)}
@@ -162,10 +166,11 @@
                                                                         :content lvalue}))}
      :desc {:fx/type :list-view
             :style-class ["list-view" "locals-view"]
-            :cell-factory {:fx/cell-type :list-cell                    
+            :cell-factory {:fx/cell-type :list-cell
                            :describe (fn [[lname lvalue result?]]                                
                                        {:text ""
                                         :graphic {:fx/type :h-box
+                                                  :style-class ["h-box" "clickable"]
                                                   :children [(if result?
                                                                {:fx/type :label
                                                                 :style-class ["label" "result-label"]
@@ -190,25 +195,30 @@
    :style {:-fx-padding 10}
    :top {:fx/type controls-pane}
    :center {:fx/type :split-pane
+            :style-class ["split-pane" "horizontal-split-pane"]
             :border-pane/margin (Insets. 10 0 0 0)
             :items [{:fx/type :tab-pane
                      :tabs [{:fx/type :tab
+                             :style-class ["tab" "panel-tab"]
                              :graphic {:fx/type :label :text "Code"}
                              :content {:fx/type code-browser}
                              :id "code"
                              :closable false}
                             {:fx/type :tab
+                             :style-class ["tab" "panel-tab"]
                              :graphic {:fx/type :label :text "Layers"}
                              :content {:fx/type layers-pane}
                              :id "layers"
                              :closable false}
                             {:fx/type :tab
+                             :style-class ["tab" "panel-tab"]
                              :graphic {:fx/type :label :text "Tree"}
                              :content {:fx/type calls-tree-pane}
                              :id "tree"
                              :closable false}]}
                     
                     {:fx/type :split-pane
+                     :style-class ["split-pane" "vertical-split-pane"]
                      :orientation :vertical
                      :items [{:fx/type pprint-pane}
                              {:fx/type locals-pane}]}]}})
@@ -219,6 +229,7 @@
      :tabs (->> flows-tabs
                 (mapv (fn [[flow-id tab-name]]
                         {:fx/type :tab
+                         :style-class ["tab" "flow-tab"]
                          :on-closed {:event/type ::ui.events/remove-flow
                                      :flow-id flow-id}
                          :on-selection-changed (fn [ev]
@@ -279,7 +290,9 @@
                      :width 1600
                      :height 900
                      :scene {:fx/type :scene
-                             :stylesheets (if styles [styles] [])
+                             :stylesheets (cond-> [(str (io/resource "fonts.css"))]
+                                            styles (into [styles])
+                                            )
                              :root {:fx/type :border-pane                  
                                     :center (if no-flows?
                                               {:fx/type no-flows}
@@ -304,7 +317,12 @@
 
 (renderer)
 (comment
-  
+  (import '[javafx.scene.text Font])
+  (Font/loadFont (io/input-stream (io/resource "fonts/Roboto-Medium.ttf")) (double 16))
+  (Font/loadFont (str (io/resource "fonts/Roboto-Bold.ttf")) 16.)
+  (Font/loadFont (str (io/resource "fonts/Roboto-Italic.ttf")) 16.)
+  (Font/loadFont (str (io/resource "fonts/Roboto-Light.ttf")) 16.)
+  (Font/loadFont (str (io/resource "fonts/Roboto-Thin.ttf")) 16.)
   (do
     (fx/mount-renderer ui.db/*state renderer)
 

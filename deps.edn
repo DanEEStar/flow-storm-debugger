@@ -10,8 +10,11 @@
         cljfx/css                   {:mvn/version "1.1.0"}
         zprint/zprint               {:mvn/version "1.0.0"}
         
-        org.kordamp.ikonli/ikonli-javafx {:mvn/version "2.6.0"}
-        org.kordamp.ikonli/ikonli-materialdesign-pack {:mvn/version "2.6.0"}
+        org.kordamp.ikonli/ikonli-javafx {:mvn/version "11.5.0"}
+        org.kordamp.ikonli/ikonli-materialdesign-pack {:mvn/version "11.5.0"}
+        ;; org.kordamp.ikonli/ikonli-javafx {:mvn/version "2.6.0"}
+        ;; org.kordamp.ikonli/ikonli-materialdesign-pack {:mvn/version "2.6.0"}
+
         jpmonettas/flow-storm       {
                                      :mvn/version "0.2.7-SNAPSHOT"
                                      ;;:local/root "/home/jmonetta/my-projects/flow-storm"

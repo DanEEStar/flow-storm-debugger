@@ -13,6 +13,7 @@
          button-back "#4b79b9"
          locals-label-color :pink
          return-label-color "#00ffa5"
+         expression-selected-color "#902638"
          font-family "'Roboto Medium'"
          icon (fn [i] {:-fx-icon-code i
                        :-fx-icon-color basic-font-color
@@ -29,7 +30,8 @@
                                " .thumb" {:-fx-background-color background-color}}
                " .bottom-bar" {:-fx-background-color background-color-2
                                :-fx-padding 5}
-               " .list-view" {" .list-cell" {:-fx-text-fill basic-font-color}
+               " .list-view" {:-fx-background-color :transparent
+                              " .list-cell" {:-fx-text-fill basic-font-color}
                               " .list-cell:even" {:-fx-background-color background-color}
                               " .list-cell:odd" {:-fx-background-color "#4a4a4a"}}
                " .no-flows" {" .text" {:-fx-font-size 16}}
@@ -61,13 +63,14 @@
                " .prev-button" {" .ikonli-font-icon" (icon "mdi-chevron-left")}
                " .next-button" {" .ikonli-font-icon" (icon "mdi-chevron-right")}
                " .result-label" {" .ikonli-font-icon" (merge (icon "mdi-arrow-right-bold")
-                                                             {:-fx-icon-color return-label-color})}
+                                                             {:-fx-icon-color return-label-color})}               
                " .strong-text" {:-fx-font-weight :bold}
                " .locals-view" {" .label" {:-fx-padding [0 10 0 0]}
                                 " .local-name" {:-fx-text-fill locals-label-color}
                                 ;;" .local-val" {" .text" {:-fx-font-family "'Roboto Light'"}}
                                 
-                                }
+                                } 
+               " .layers-view" {}
                " .calls-tree" {:-fx-padding [10 0 10 10]
                                :-fx-border-color :pink
                                :-fx-border-width [0 0 0 1]}

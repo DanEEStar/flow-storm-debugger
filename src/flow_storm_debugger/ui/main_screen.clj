@@ -115,11 +115,18 @@
                                                          :trace-idx trace-idx}))
              :selected-item selected-item}
      :desc {:fx/type :list-view
+            :style-class ["list-view" "layers-view"]
             :cell-factory {:fx/cell-type :list-cell
                            :describe (fn [{:keys [result selected?]}]                                
                                        {:text ""
+                                        :style (if selected?
+                                                 {:-fx-background-color "#902638"}
+                                                 {})
+                                        ;; :style-class (cond-> []
+                                        ;;                selected? (into ["selected"]))
                                         :graphic {:fx/type :label
                                                   :style-class ["label" "clickable"]
+                                                  
                                                   :text (when result (str/replace result #"\n" " "))}})}
             :items layers}}))
 
@@ -131,7 +138,7 @@
        :children (-> [{:fx/type :h-box
                        :style-class ["h-box" "clickable"]
                        :on-mouse-clicked {:event/type ::ui.events/set-current-flow-trace-idx
-                                        :trace-idx call-trace-idx}
+                                        :trace-idx (inc call-trace-idx)}
                        :children [{:fx/type :label :text "("}
                                   {:fx/type :label :style {:-fx-font-weight :bold}
                                    :text (str fn-name " ")}

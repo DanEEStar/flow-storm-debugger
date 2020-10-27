@@ -43,14 +43,15 @@
                " .tab-pane" {" .flow-tab" {:-fx-background-color background-color-2
                                            ":selected" {:-fx-background-color background-color}}
                              " .panel-tab" {:-fx-background-color background-color-2
-                                            ":selected" {:-fx-background-color background-color}}}
+                                            ":selected" {:-fx-background-color background-color}}
+                             " > .tab-header-area" {" > .headers-region" {" > .tab" {:-fx-background-insets [0 1 0 0]}}}}
                " .stack-pane" {:-fx-box-border :transparent}
                " .split-pane" {:-fx-border-color background-color-2
                                :-fx-background-color :transparent
                                :-fx-box-border :transparent
                                " .split-pane-divider" {:-fx-padding 0
                                                        :-fx-border-color "#aaa"}}
-               ;; " .vertical-split-pane" {:-fx-box-border :transparent}
+               " .vertical-split-pane" {:-fx-border-color :transparent}
                ;; " .horizontal-split-pane" {:-fx-background-color :transparent}
                " .pane-text-area" {:-fx-text-fill basic-font-color
                                    :-fx-background-color background-color
